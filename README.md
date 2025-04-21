@@ -44,7 +44,7 @@ This script configures a Linux machine (Ubuntu, Debian, Fedora, or CentOS) to ac
 
 1. **Clone this repository** (or download the script):
    ```bash
-   git clone https://github.com/MY_REPO/twingate-gateway.git
+   git clone https://github.com/gbern-tg/twingate-gateway.git
    cd twingate-gateway
    ```
 
