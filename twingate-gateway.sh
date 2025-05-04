@@ -6,13 +6,73 @@
 # as a Twingate Internet Gateway for the local network.
 # ============================================================
 
-# Prerequisites:
-# 1. A Twingate Service Account.
-# 2. A valid JSON Twingate configuration file (service-key.json).
-# 3. The subnet of your local network.
-# 4. This script should be run as root or with sudo.
+# ============================================================
+# Prerequisites
+# ============================================================
+# 1. Operating System Requirements:
+#    - Ubuntu 20.04 LTS or newer
+#    - Debian 10 or newer
+#    - CentOS 8 or newer
+#    - Fedora 32 or newer
+#
+# 2. Network Requirements:
+#    - At least two network interfaces (WAN and LAN)
+#    - WAN interface with internet connectivity
+#    - LAN interface for local network
+#
+# 3. Twingate Requirements:
+#    - A valid Twingate account
+#    - A Twingate Service Account
+#    - A valid JSON Twingate configuration file (service-key.json)
+#
+# 4. System Requirements:
+#    - Root or sudo privileges
+#    - At least 1GB RAM
+#    - At least 10GB disk space
+#    - System with IP forwarding capability
+#
+# 5. Network Configuration:
+#    - Local network subnet (e.g., 192.168.210.0/24)
+#    - DHCP configuration (if enabled)
+#    - DNS configuration
+#
+# Note: This script will:
+# - Configure network interfaces
+# - Set up DNSMasq for DNS and DHCP
+# - Configure NAT and IP forwarding
+# - Install and configure Twingate client
+# - Set up IP filtering (optional)
 
-# Example usage:
+# Environment Variables (can be set before running the script):
+# TWINGATE_SERVICE_KEY_FILE - Path to Twingate service key file
+# WAN_INTERFACE - WAN interface (e.g., wlan0)
+# LAN_INTERFACE - LAN interface (e.g., eth0)
+# LOCAL_NETWORK_SUBNET - Local network subnet (e.g., 192.168.210.0/24)
+# ENABLE_DHCP - Whether to enable DHCP (yes/no)
+# DHCP_RANGE - DHCP range (e.g., 192.168.100.100,192.168.100.150,12h)
+# DHCP_GATEWAY - DHCP gateway IP (e.g., 192.168.100.1)
+# DHCP_DNS - DHCP DNS IP (e.g., 192.168.100.1)
+# ALLOW_SPECIFIC_IPS - Whether to enable IP filtering (yes/no)
+# ALLOWED_LAN_IPS - Comma-separated list of allowed LAN IPs
+# ALLOWED_WAN_IPS - Comma-separated list of allowed WAN IPs
+
+# Set noninteractive mode for all prompts
+export DEBIAN_FRONTEND=noninteractive
+
+# Example usage: Set environment variables
+export TWINGATE_SERVICE_KEY_FILE=/home/lurkn/twingate-gateway/service-key.json
+export WAN_INTERFACE=wlan0
+export LAN_INTERFACE=eth0
+export LOCAL_NETWORK_SUBNET=192.168.210.0/24
+export ENABLE_DHCP=yes
+export DHCP_RANGE=192.168.100.100,192.168.100.150,12h
+export DHCP_GATEWAY=192.168.100.1
+export DHCP_DNS=192.168.100.1
+export ALLOW_SPECIFIC_IPS=yes
+export ALLOWED_LAN_IPS=192.168.100.0/24
+export ALLOWED_WAN_IPS=192.168.210.0/24
+
+# Example usage: Run the script
 # sudo ./twingate-gateway.sh
 
 # ============================================================
@@ -21,12 +81,31 @@
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
   echo "Usage: sudo ./twingate-gateway.sh"
   echo "This script will guide you through the configuration process."
-  echo "You will be prompted for:"
-  echo "  - Twingate service key file location"
-  echo "  - Local network subnet"
-  echo "  - Network interfaces configuration"
-  echo "  - DHCP settings (optional)"
-  echo "  - IP filtering settings (optional)"
+  echo ""
+  echo "You can run this script in two ways:"
+  echo ""
+  echo "1. Interactive Mode (default):"
+  echo "   Just run the script and follow the prompts"
+  echo ""
+  echo "2. Non-Interactive Mode:"
+  echo "   Set environment variables before running:"
+  echo ""
+  echo "   Required variables:"
+  echo "   TWINGATE_SERVICE_KEY_FILE=/path/to/service-key.json"
+  echo "   WAN_INTERFACE=eth0"
+  echo "   LOCAL_NETWORK_SUBNET=192.168.1.0/24"
+  echo ""
+  echo "   Optional variables:"
+  echo "   ENABLE_DHCP=yes"
+  echo "   LAN_INTERFACE=eth1"
+  echo "   DHCP_RANGE=192.168.100.100,192.168.100.150,12h"
+  echo "   DHCP_GATEWAY=192.168.100.1"
+  echo "   DHCP_DNS=192.168.100.1"
+  echo "   ALLOW_SPECIFIC_IPS=yes"
+  echo "   ALLOWED_LAN_IPS=192.168.100.0/24"
+  echo "   ALLOWED_WAN_IPS=192.168.1.0/24"
+  echo ""
+  echo "For more details, see the README.md file."
   exit 0
 fi
 
@@ -49,45 +128,56 @@ echo "$WAN_INTERFACES"
 # ============================================================
 # Prompt for Configuration
 # ============================================================
-echo "Please provide the following configuration details:"
 
 # Prompt for WAN interface
-while true; do
-  read -p "Select the WAN interface that will be used to connect to the internet: " WAN_INTERFACE
-  if echo "$WAN_INTERFACES" | grep -q "^$WAN_INTERFACE$"; then
-    break
-  else
-    echo "Invalid interface. Please select from available interfaces."
-  fi
-  echo "==> WAN interface: $WAN_INTERFACE"
-done
+if [ -z "$WAN_INTERFACE" ]; then
+  while true; do
+    read -p "Select the WAN interface that will be used to connect to the internet: " WAN_INTERFACE
+    if echo "$WAN_INTERFACES" | grep -q "^$WAN_INTERFACE$"; then
+      break
+    else
+      echo "Invalid interface. Please select from available interfaces."
+    fi
+  done
+else
+  echo "Using WAN interface from environment: $WAN_INTERFACE"
+fi
 
 # Prompt for local network subnet
-while true; do
-  read -p "Enter the local network subnet that will be routed through Twingate (format: x.x.x.x/xx): " LOCAL_NETWORK_SUBNET
-  if echo "$LOCAL_NETWORK_SUBNET" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$'; then # Check if the subnet is valid
-    break
-  else
-    echo "Invalid subnet format. Please use format x.x.x.x/xx"
-  fi
-  echo "==> Local network subnet: $LOCAL_NETWORK_SUBNET"
-  WAN_BASE=$(echo "$LOCAL_NETWORK_SUBNET" | cut -d'/' -f1 | cut -d'.' -f1-3)
-done
+if [ -z "$LOCAL_NETWORK_SUBNET" ]; then
+  while true; do
+    read -p "Enter the local network subnet that will be routed through Twingate (format: x.x.x.x/xx): " LOCAL_NETWORK_SUBNET
+    if echo "$LOCAL_NETWORK_SUBNET" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$'; then
+      break
+    else
+      echo "Invalid subnet format. Please use format x.x.x.x/xx"
+    fi
+  done
+else
+  echo "Using local network subnet from environment: $LOCAL_NETWORK_SUBNET"
+fi
 
 # Prompt for Twingate service key file
-while true; do
-  read -p "Enter the path to your Twingate service key file: " TWINGATE_SERVICE_KEY_FILE
-  if [ -f "$TWINGATE_SERVICE_KEY_FILE" ]; then
-    break
-  else
-    echo "File not found. Please provide a valid path."
-  fi
-  echo "==> Twingate service key file: $TWINGATE_SERVICE_KEY_FILE"
-done
+if [ -z "$TWINGATE_SERVICE_KEY_FILE" ]; then
+  while true; do
+    read -p "Enter the path to your Twingate service key file: " TWINGATE_SERVICE_KEY_FILE
+    if [ -f "$TWINGATE_SERVICE_KEY_FILE" ]; then
+      break
+    else
+      echo "File not found. Please provide a valid path."
+    fi
+  done
+else
+  echo "Using Twingate service key file from environment: $TWINGATE_SERVICE_KEY_FILE"
+fi
 
 # Prompt for DHCP configuration
-read -p "Do you want to enable DHCP? (yes/no) [no]: " ENABLE_DHCP
-ENABLE_DHCP=${ENABLE_DHCP:-no}
+if [ -z "$ENABLE_DHCP" ]; then
+  read -p "Do you want to enable DHCP? (yes/no) [no]: " ENABLE_DHCP
+  ENABLE_DHCP=${ENABLE_DHCP:-no}
+else
+  echo "Using DHCP configuration from environment: $ENABLE_DHCP"
+fi
 
 if [[ "$ENABLE_DHCP" == "yes" ]]; then
   # Get available interfaces excluding the WAN interface
@@ -96,53 +186,84 @@ if [[ "$ENABLE_DHCP" == "yes" ]]; then
   echo "$LAN_INTERFACES"
   
   # Prompt for LAN interface only if DHCP is enabled
-  while true; do
-    read -p "Select the LAN interface for DHCP (interface providing the local network): " LAN_INTERFACE
-    if echo "$LAN_INTERFACES" | grep -q "^$LAN_INTERFACE$"; then
-      break
-    else
-      echo "Invalid interface. Please select from available LAN interfaces."
-    fi
-  done
+  if [ -z "$LAN_INTERFACE" ]; then
+    while true; do
+      read -p "Select the LAN interface for DHCP (interface providing the local network): " LAN_INTERFACE
+      if echo "$LAN_INTERFACES" | grep -q "^$LAN_INTERFACE$"; then
+        break
+      else
+        echo "Invalid interface. Please select from available LAN interfaces."
+      fi
+    done
+  else
+    echo "Using LAN interface from environment: $LAN_INTERFACE"
+  fi
 
-  read -p "Enter DHCP range - this must be different from the WAN interface subnet (e.g., 192.168.100.100,192.168.100.150,12h): " DHCP_RANGE
-  read -p "Enter DHCP gateway IP - this must be different from the WAN gateway IP (e.g., 192.168.100.1): " DHCP_GATEWAY
-  read -p "Enter DHCP DNS IP - this must be different from the WAN DNS IP (e.g., 192.168.100.1): " DHCP_DNS
+  if [ -z "$DHCP_RANGE" ]; then
+    read -p "Enter DHCP range - this must be different from the WAN interface subnet (e.g., 192.168.100.100,192.168.100.150,12h): " DHCP_RANGE
+  else
+    echo "Using DHCP range from environment: $DHCP_RANGE"
+  fi
+
+  if [ -z "$DHCP_GATEWAY" ]; then
+    read -p "Enter DHCP gateway IP - this must be different from the WAN gateway IP (e.g., 192.168.100.1): " DHCP_GATEWAY
+  else
+    echo "Using DHCP gateway from environment: $DHCP_GATEWAY"
+  fi
+
+  if [ -z "$DHCP_DNS" ]; then
+    read -p "Enter DHCP DNS IP - this must be different from the WAN DNS IP (e.g., 192.168.100.1): " DHCP_DNS
+  else
+    echo "Using DHCP DNS from environment: $DHCP_DNS"
+  fi
 else
   # If no DHCP, use the same interface as WAN
   LAN_INTERFACE="$WAN_INTERFACE"
 fi
 
 # Prompt for IP filtering
-read -p "Do you want to whitelist specific IPs to restrict access to Twingate? (yes/no) [no]: " ALLOW_SPECIFIC_IPS
-# Set default to no if not specified
-ALLOW_SPECIFIC_IPS=${ALLOW_SPECIFIC_IPS:-no}
+if [ -z "$ALLOW_SPECIFIC_IPS" ]; then
+  read -p "Do you want to whitelist specific IPs to restrict access to Twingate? (yes/no) [no]: " ALLOW_SPECIFIC_IPS
+  ALLOW_SPECIFIC_IPS=${ALLOW_SPECIFIC_IPS:-no}
+else
+  echo "Using IP filtering configuration from environment: $ALLOW_SPECIFIC_IPS"
+fi
 
 if [[ "$ALLOW_SPECIFIC_IPS" == "yes" ]]; then
   if [[ "$ENABLE_DHCP" == "yes" ]]; then
-    # Prompt for allowed LAN IPs
-    echo "Enter comma-separated list of allowed IPs from your DHCP range ($DHCP_RANGE) individually or as a range"
-    echo "Example: $DHCP_BASE.100,$DHCP_BASE.101, $DHCP_BASE.102-$DHCP_BASE.150"
-    read -p "Allowed LAN IPs [$DHCP_RANGE]: " ALLOWED_LAN_IPS
     if [ -z "$ALLOWED_LAN_IPS" ]; then
-      ALLOWED_LAN_IPS=$DHCP_RANGE
+      echo "Enter comma-separated list of allowed IPs from your DHCP range ($DHCP_RANGE) individually or as a range"
+      echo "Example: $DHCP_BASE.100,$DHCP_BASE.101, $DHCP_BASE.102-$DHCP_BASE.150"
+      read -p "Allowed LAN IPs [$DHCP_RANGE]: " ALLOWED_LAN_IPS
+      if [ -z "$ALLOWED_LAN_IPS" ]; then
+        ALLOWED_LAN_IPS=$DHCP_RANGE
+      fi
+    else
+      echo "Using allowed LAN IPs from environment: $ALLOWED_LAN_IPS"
     fi
-    # Prompt for allowed WAN IPs
-    echo "Enter comma-separated list of allowed IPs from your network subnet individually or as a range"
-    echo "Example: $WAN_BASE.100,$WAN_BASE.101,$WAN_BASE.102"
-    read -p "Allowed WAN IPs [$LOCAL_NETWORK_SUBNET]: " ALLOWED_WAN_IPS
+
     if [ -z "$ALLOWED_WAN_IPS" ]; then
-      ALLOWED_WAN_IPS=$LOCAL_NETWORK_SUBNET
+      echo "Enter comma-separated list of allowed IPs from your network subnet individually or as a range"
+      echo "Example: $WAN_BASE.100,$WAN_BASE.101,$WAN_BASE.102"
+      read -p "Allowed WAN IPs [$LOCAL_NETWORK_SUBNET]: " ALLOWED_WAN_IPS
+      if [ -z "$ALLOWED_WAN_IPS" ]; then
+        ALLOWED_WAN_IPS=$LOCAL_NETWORK_SUBNET
+      fi
+    else
+      echo "Using allowed WAN IPs from environment: $ALLOWED_WAN_IPS"
     fi
   else
-    echo "Enter comma-separated list of allowed IPs from your network subnet individually or as a range"
-    echo "Example: $WAN_BASE.100,$WAN_BASE.101,$WAN_BASE.102"
-    read -p "Allowed WAN IPs [$LOCAL_NETWORK_SUBNET]: " ALLOWED_WAN_IPS
     if [ -z "$ALLOWED_WAN_IPS" ]; then
-      ALLOWED_WAN_IPS=$LOCAL_NETWORK_SUBNET
+      echo "Enter comma-separated list of allowed IPs from your network subnet individually or as a range"
+      echo "Example: $WAN_BASE.100,$WAN_BASE.101,$WAN_BASE.102"
+      read -p "Allowed WAN IPs [$LOCAL_NETWORK_SUBNET]: " ALLOWED_WAN_IPS
+      if [ -z "$ALLOWED_WAN_IPS" ]; then
+        ALLOWED_WAN_IPS=$LOCAL_NETWORK_SUBNET
+      fi
+    else
+      echo "Using allowed WAN IPs from environment: $ALLOWED_WAN_IPS"
     fi
   fi
-  #read -p "Allowed IPs: " ALLOWED_IPS
 fi
 
 # Get the main network interface IP address
@@ -256,8 +377,27 @@ if [ "$OS_TYPE" = "fedora" ]; then
   sudo systemctl enable iptables && sudo systemctl start iptables
 else
   # Debian/Ubuntu specific setup
+  # Ensure debconf is installed
+  if ! command -v debconf-set-selections &> /dev/null; then
+    $PKG_MANAGER install -y debconf
+  fi
+
+  # Configure unattended upgrades to prevent prompts
+  #echo '* libraries/restart-without-asking boolean true' | debconf-set-selections
+  #echo 'Dpkg::Options::="--force-confdef";' > /etc/apt/apt.conf.d/local
+  #echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/local
+
+  # Update package lists
   $PKG_MANAGER update -y
-  $PKG_MANAGER install -y dnsmasq curl iptables iptables iptables-persistent
+
+  # Install iptables-persistent without prompts
+  echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
+  echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
+  $PKG_MANAGER install -y dnsmasq curl iptables iptables-persistent
+
+  # Ensure iptables-persistent is enabled
+  systemctl enable netfilter-persistent
+  systemctl start netfilter-persistent
 fi
 
 # ============================================================
@@ -312,6 +452,16 @@ $DHCP_GATEWAY_LISTEN
 # bogus-priv: Don't forward reverse lookups for private IP ranges
 domain-needed
 bogus-priv
+
+# DNS TTL Settings
+# --------------
+# Set short TTL (60 seconds) for all DNS records
+min-cache-ttl=60
+max-cache-ttl=60
+local-ttl=60
+neg-ttl=60
+auth-ttl=60
+max-ttl=60
 
 # DNS Forwarding
 # -------------
@@ -399,26 +549,8 @@ sudo iptables -t nat -A POSTROUTING -s "$LOCAL_NETWORK_SUBNET" -o "$WAN_INTERFAC
 sudo iptables -t nat -A POSTROUTING -s "$DHCP_RANGE" -o "$WAN_INTERFACE" -j MASQUERADE
 
 # ============================================================
-# Forwarding Rules
-# Purpose: Allow traffic to flow between interfaces
-# ============================================================
-# Allow forwarding from LAN to WAN
-#sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o "$WAN_INTERFACE" -j ACCEPT
-
-#sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o "$WAN_INTERFACE" -s "$LOCAL_NETWORK_SUBNET" -j ACCEPT
-
-# Allow forwarding from LAN to Twingate
-#sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o sdwan0 -j ACCEPT
-
-# Allow established/related traffic from WAN to LAN
-#sudo iptables -A FORWARD -i "$WAN_INTERFACE" -o "$LAN_INTERFACE" -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-# Allow established/related traffic from Twingate to LAN
-#sudo iptables -A FORWARD -i sdwan0 -o "$LAN_INTERFACE" -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-# ============================================================
-# IP Filtering Rules (if enabled)
-# Purpose: Restrict access to specific IP addresses
+# IP Filtering Rules (if enabled) and Forwarding Rules
+# Purpose: Restrict access to specific IP addresses (if enabled) and allow forwarding to specific IPs (if enabled)
 # ============================================================
 
 if [[ "$ALLOW_SPECIFIC_IPS" == "yes" ]]; then
@@ -483,9 +615,21 @@ if [[ "$ALLOW_SPECIFIC_IPS" == "yes" ]]; then
     done
   fi
 
-  # Drop all others
-  #sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o sdwan0 -j DROP
-  #sudo iptables -A INPUT -i "$LAN_INTERFACE" -j DROP
+  # Drop all other traffic attempting to pass through the LAN or WAN interfaces to the sdwan0 interface
+  sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o sdwan0 -j DROP
+  sudo iptables -A FORWARD -i "$WAN_INTERFACE" -o sdwan0 -j DROP
+
+# (OPTIONAL) If ALLOW_SPECIFIC_IPS is not enabled, allow all traffic through to sdwan0 (more scoped down)
+#else 
+  # Allow all traffic through to sdwan0
+  #sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o sdwan0 -j ACCEPT
+  #sudo iptables -A FORWARD -i "$WAN_INTERFACE" -o sdwan0 -j ACCEPT
+
+  # Allow all traffic through to LAN interface
+  #sudo iptables -A FORWARD -i "$WAN_INTERFACE" -o "$LAN_INTERFACE" -j ACCEPT
+
+  # Allow all traffic through to WAN interface
+  #sudo iptables -A FORWARD -i "$LAN_INTERFACE" -o "$WAN_INTERFACE" -j ACCEPT
 fi
 
 # ============================================================
@@ -500,6 +644,18 @@ else
   sudo iptables-save > /etc/iptables/rules.v4
   sudo systemctl restart iptables
 fi
+
+# ============================================================
+# Display Current IPTables Rules
+# ============================================================
+echo "Current IPTables Rules:"
+echo "======================"
+echo "Filter Table Rules:"
+sudo iptables -L -v -n
+echo -e "\nNAT Table Rules:"
+sudo iptables -t nat -L -v -n
+echo -e "\nMangle Table Rules:"
+sudo iptables -t mangle -L -v -n
 
 # ============================================================
 # Enable IPv4 Forwarding
