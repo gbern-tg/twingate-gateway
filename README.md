@@ -6,7 +6,7 @@ This project automates the setup of a Linux-based gateway to forward all local n
 
 ## ⚙️ How It Works
 
-![tg-gateway-arch](https://raw.githubusercontent.com/gbern-tg/twingate-gateway/refs/heads/main/tg-gateway-architecture.png "Twingate Gateway Architecture")
+![tg-gateway-arch](https://github.com/gbern-tg/twingate-gateway/blob/main/assets/twingate-gateway-arch.png "Twingate Gateway Architecture")
 
 This script configures a Linux machine (Ubuntu, Debian, Fedora, or CentOS) to act as an Internet Gateway by:
 
