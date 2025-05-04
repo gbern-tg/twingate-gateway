@@ -11,7 +11,7 @@ This project automates the setup of a Linux-based gateway to forward all local n
 This script configures a Linux machine (Ubuntu, Debian, Fedora, or CentOS) to act as an Internet Gateway by:
 
 - Setting up **DNSMasq** for DHCP and DNS.
-- Configuring **iptables** for NAT and routing.
+- Configuring **iptables** for NAT and route forwarding.
 - Installing and registering the **Twingate client**.
 - Optionally whitelisting client IPs for tighter access control.
 
