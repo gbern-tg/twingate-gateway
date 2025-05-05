@@ -1,6 +1,23 @@
-# 🛡️ Twingate Internet Gateway Installer
+> ⚠️ **Experimental Project**  
+> This is an experimental project and not officially supported by Twingate. Use at your own risk.
 
-This project automates the setup of a Linux-based gateway to forward all local network traffic through [Twingate](https://www.twingate.com). It's ideal for use cases where devices have limited network configurability and need additional help from a DHCP server to route network traffic securely through a private Twingate tunnel (Roku, Amazon Fire TV, Chromecast, IoT devices, DevKits, etc.).
+# 🛡️ Twingate Internet Gateway
+
+A powerful Linux-based gateway solution that routes network traffic through Twingate's secure tunnel. Perfect for IoT devices, streaming boxes, and development kits that need secure internet access but have limited network configurability.
+
+## Key Features
+- 🔄 **DHCP Server**: Automatic IP assignment for connected devices
+- 🛡️ **IP Filtering**: Granular access control with IP whitelisting
+- 🌐 **Multi-Interface**: Support for both Ethernet and WiFi
+- 🔒 **Secure Routing**: All traffic routed through Twingate's private tunnel
+- 🖥️ **Cross-Platform**: Works on Ubuntu, Debian, Fedora, and CentOS
+- 🏗️ **Flexible Deployment**: Run on VMs, physical hosts, or Raspberry Pi
+
+## Use Cases
+- 📺 Smart TVs & Streaming Devices (Roku, Fire TV, Chromecast)
+- 🏠 IoT Devices & Smart Home Equipment
+- 💻 Development Kits & Test Environments
+- 🏢 Network Isolation & VLAN Management
 
 ---
 
