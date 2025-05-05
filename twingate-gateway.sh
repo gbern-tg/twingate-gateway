@@ -56,21 +56,22 @@
 # ALLOWED_LAN_IPS - Comma-separated list of allowed LAN IPs
 # ALLOWED_WAN_IPS - Comma-separated list of allowed WAN IPs
 
-# Set noninteractive mode for all prompts
-export DEBIAN_FRONTEND=noninteractive
+# ============================================================
+# (OPTIONAL) Configurations - uncomment to use
+# ============================================================
 
 # Example usage: Set environment variables
-export TWINGATE_SERVICE_KEY_FILE=/home/lurkn/twingate-gateway/service-key.json
-export WAN_INTERFACE=wlan0
-export LAN_INTERFACE=eth0
-export LOCAL_NETWORK_SUBNET=192.168.210.0/24
-export ENABLE_DHCP=yes
-export DHCP_RANGE=192.168.100.100,192.168.100.150,12h
-export DHCP_GATEWAY=192.168.100.1
-export DHCP_DNS=192.168.100.1
-export ALLOW_SPECIFIC_IPS=yes
-export ALLOWED_LAN_IPS=192.168.100.0/24
-export ALLOWED_WAN_IPS=192.168.210.0/24
+#export TWINGATE_SERVICE_KEY_FILE=~/twingate-gateway/service-key.json
+#export WAN_INTERFACE=wlan0
+#export LAN_INTERFACE=eth0
+#export LOCAL_NETWORK_SUBNET=192.168.1.0/24
+#export ENABLE_DHCP=yes
+#export DHCP_RANGE=192.168.100.100,192.168.100.150,12h
+#export DHCP_GATEWAY=192.168.100.1
+#export DHCP_DNS=192.168.100.1
+#export ALLOW_SPECIFIC_IPS=yes
+#export ALLOWED_LAN_IPS=192.168.100.0/24
+#export ALLOWED_WAN_IPS=192.168.210.0/24
 
 # Example usage: Run the script
 # sudo ./twingate-gateway.sh
@@ -116,6 +117,11 @@ if [ "$EUID" -ne 0 ]; then
   echo "Please run as root or with sudo."
   exit 1
 fi
+
+# ============================================================
+# Set noninteractive mode for all prompts
+# ============================================================
+export DEBIAN_FRONTEND=noninteractive
 
 # ============================================================
 # Detect Network Interfaces
