@@ -42,7 +42,7 @@
 # - Configure NAT and IP forwarding
 # - Install and configure Twingate client
 # - Set up IP filtering (optional)
-
+#
 # Environment Variables (can be set before running the script):
 # TWINGATE_SERVICE_KEY_FILE - Path to Twingate service key file
 # WAN_INTERFACE - WAN interface (e.g., wlan0)
