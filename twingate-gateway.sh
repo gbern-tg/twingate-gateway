@@ -61,7 +61,7 @@
 # ============================================================
 
 # Example usage: Set environment variables
-#export TWINGATE_SERVICE_KEY_FILE=~/twingate-gateway/service-key.json
+#export TWINGATE_SERVICE_KEY_FILE=$HOME/twingate-gateway/service-key.json
 #export WAN_INTERFACE=wlan0
 #export LAN_INTERFACE=eth0
 #export LOCAL_NETWORK_SUBNET=192.168.1.0/24
