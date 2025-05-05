@@ -1,6 +1,6 @@
 # 🛡️ Twingate Internet Gateway Installer
 
-This project automates the setup of a Linux-based gateway to forward all local network traffic through [Twingate](https://www.twingate.com). It's ideal for use cases like protecting IoT devices, isolating VLANs, or routing network traffic securely through a private tunnel.
+This project automates the setup of a Linux-based gateway to forward all local network traffic through [Twingate](https://www.twingate.com). It's ideal for use cases where devices have limited network configurability and need additional help from a DHCP server to route network traffic securely through a private Twingate tunnel (Roku, Amazon Fire TV, Chromecast, IoT devices, DevKits, etc.).
 
 ---
 
@@ -8,12 +8,11 @@ This project automates the setup of a Linux-based gateway to forward all local n
 
 ![tg-gateway-arch](https://github.com/gbern-tg/twingate-gateway/blob/main/assets/twingate-gateway-arch.png "Twingate Gateway Architecture")
 
-This script configures a Linux machine (Ubuntu, Debian, Fedora, or CentOS) to act as an Internet Gateway by:
+This script configures a Linux VM/host (Ubuntu, Debian, Fedora, or CentOS) to act as an Internet Gateway by:
 
 - Setting up **DNSMasq** for DHCP and DNS.
-- Configuring **iptables** for NAT and route forwarding.
+- Configuring **iptables** for NAT, route forwarding, and optionally whitelisting client IPs for tighter access control.
 - Installing and registering the **Twingate client**.
-- Optionally whitelisting client IPs for tighter access control.
 
 ---
 
@@ -21,12 +20,12 @@ This script configures a Linux machine (Ubuntu, Debian, Fedora, or CentOS) to ac
 
 - A **Linux machine** running Ubuntu/Debian/Fedora/CentOS, this can be a VM or something like Raspberry Pi.
 - If a VM,
-  - The VM must be hosted on a **macOS or Windows machine** using **virtualization software** (e.g., VirtualBox, UTM, VMWare, Parallels).
-  - The VM should have **at least 2 network interfaces**:
-    - One for **internet (WAN)** access (bridged or NAT).
-    - One for **local (LAN)** access (host-only or bridged to a LAN port).
+  - The VM can be hosted on a a **hypervisor** (e.g., Proxmox, Hyper-V, ESXi) or **macOS or Windows machine** using **virtualization software** (e.g., VirtualBox, UTM, VMWare, Parallels).
+- For DHCP, the host/VM should have **at least 2 network interfaces**:
+  - One for **internet (WAN)** access (bridged or NAT).
+  - One for **local (LAN)** access (host-only or bridged to a LAN port).
 
-> 💡 **Tip**: Bridged mode is recommended for both interfaces if you want the VM to be discoverable and reachable on the local network.
+> 💡 **Tip for VMs**: Bridged mode is ideal and recommended for the WAN interface so the VM is discoverable and reachable on the local network.
 
 ---
 
@@ -122,7 +121,7 @@ sudo ./twingate-gateway.sh
 | DHCP Range               | `192.168.100.100,192.168.100.150,12h` |
 | DHCP Gateway             | `192.168.100.1`             |
 | DHCP DNS                | `192.168.100.1`             |
-| Whitelisted IPs (optional) | `192.168.1.5,192.168.100.100,192.168.100.105` |
+| Whitelisted IPs (optional) | `192.168.1.5,192.168.100.100,192.168.100.105 -OR- 192.168.1.0/24,192.168.100.0/24` |
 
 ---
 
